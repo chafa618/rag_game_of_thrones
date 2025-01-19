@@ -1,6 +1,7 @@
 import annoy
 from sentence_transformers import SentenceTransformer
 import json
+from chatbot import get_answer_from_local_model, get_answer_from_openai
 
 model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
 
@@ -34,25 +35,26 @@ def process_query(query, index, chunk_id_mapping):
     return texto_potencial, potenciales_respuestas
 
 def run(query):
-    _, chunk_id_mapping = load_data('juego_de_tronos_chunks_300.json')
-    index = load_index('index_juego_de_tronos_chunk_300.ann', 768)
-    return process_query(query, index, chunk_id_mapping)
-
+    _, candidatos = process_query(query, index, chunk_id_mapping)
+    llm_respuesta = get_answer_from_local_model(query, candidatos)
+    return llm_respuesta, candidatos
+    
 #_, chunk_id_mapping = load_data('juego_de_tronos_chunks_300.json')
 #index = load_index('index_juego_de_tronos_chunk_300.ann', 768)
 
 
 
 if __name__ == '__main__':
+    _, chunk_id_mapping = load_data('../data/juego_de_tronos_chunks_300.json')
+    index = load_index('../index_juego_de_tronos_chunk_300.ann', 768)
     while True:
         query = input("Introduce tu pregunta. Escribe /bye para salir: ")
         if query == "/bye":
             break
-        texto_potencial, _ = run(query)
-        print('RS: ', _)
+        llm_respuesta, candidatos = run(query)
+        
         print("Texto potencial:")
-        for texto in texto_potencial:
-            print(texto)
+        print(llm_respuesta)
         print("\n")
 
 
