@@ -1,4 +1,8 @@
 import gradio as gr
+from engine import run, load_data, load_index
+
+_, chunk_id_mapping = load_data('../data/juego_de_tronos_chunks_300.json')
+index = load_index('../index_juego_de_tronos_chunk_300.ann', 768)
 
 # Función para manejar las interacciones
 def chatbot_response(user_message):
@@ -8,7 +12,8 @@ def chatbot_response(user_message):
     elif "adiós" in user_message.lower():
         return "Adiós, ¡que tengas un gran día!"
     else:
-        return "Lo siento, no entiendo tu mensaje."
+        llm_response, _ = run(user_message, index, chunk_id_mapping)
+        return llm_response
 
 # Interfaz de Gradio
 with gr.Blocks() as demo:
@@ -19,8 +24,8 @@ with gr.Blocks() as demo:
 
     def chat_flow(user_input, chat_history):
         response = chatbot_response(user_input)
-        chat_history.append(("Tú", user_input))
-        chat_history.append(("Chatbot", response))
+        chat_history.append(("user", user_input))
+        chat_history.append(("chatbot", response))
         return chat_history, ""
 
     send_button.click(chat_flow, inputs=[user_input, chat_box], outputs=[chat_box, user_input],)

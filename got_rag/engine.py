@@ -34,7 +34,7 @@ def process_query(query, index, chunk_id_mapping):
     texto_potencial = [chunk for chunk in potenciales_respuestas]
     return texto_potencial, potenciales_respuestas
 
-def run(query):
+def run(query, index, chunk_id_mapping):
     _, candidatos = process_query(query, index, chunk_id_mapping)
     llm_respuesta = get_answer_from_local_model(query, candidatos)
     return llm_respuesta, candidatos
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         query = input("Introduce tu pregunta. Escribe /bye para salir: ")
         if query == "/bye":
             break
-        llm_respuesta, candidatos = run(query)
+        llm_respuesta, candidatos = run(query, index, chunk_id_mapping)
         
         print("Texto potencial:")
         print(llm_respuesta)

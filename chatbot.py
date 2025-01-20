@@ -74,15 +74,16 @@ def get_answer_from_openai(query, context):
     client = openai.Client(api_key=os.environ["OPENAI_API_KEY"])
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-16k",
+        temperature=0.1,
         messages=[
-            {"role": "developer", "content": "."},
+            {"role": "developer", "content": "Sos un sistema de RAG. Voy a proveerte de una pregunta o mensaje y su contexto. Necesito que respondas a la pregunta usando esa información. Si el contexto y la pregunta no estuvieran relacionados, solo responde que no hay relacion entre ellos, sin más detalles."},
             {
                 "role": "user",
-                "content": f"Contexto: {context}\nPregunta: {query}\nRespuesta:"
+                "content": f"Contexto: {context}\nPregunta: {query}"
             },
         ]
     )
-    return response.choices[0].message
+    return response.choices[0].message.content
 
 def chatbot(pdf_path, query):
     text = extract_text_from_pdf(pdf_path)
@@ -100,7 +101,13 @@ def get_answer_from_local_model(query, context):
     url = 'http://localhost:11434/api/generate'  
     payload = {
         'model': "mistral",
-        'prompt': f"Contexto: {context}\nPregunta: {query}\nRespuesta:",
+        'prompt': f"""Sos Asistente especializado en Juego de Tronos. Voy a proveerte de una pregunta o mensaje y su contexto. Necesito que elabores una respuesta basandote en el contexto. Si el contexto y la pregunta no estuvieran relacionados, solo responde que no hay relacion entre ellos, sin más detalles.
+        
+        Contexto: ```{context}```
+         
+        Pregunta: {query}
+        
+        """,
         'temperature': 0.1
     }
     
@@ -152,9 +159,3 @@ def chatbot_faiss(pdf_path, query, index_file_path=None):
     answer = get_answer_from_local_model(preprocessed_query, context)
     return answer
 
-
-
-# Example usage
-pdf_path = 'Juego de tronos - Canción de hielo y fuego 1 (1).pdf'
-query = 'Enumera los acontecimientos claves'
-print(chatbot_faiss(pdf_path, query, index_file_path='vdb_got.faiss'))
