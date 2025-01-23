@@ -8,6 +8,10 @@ from utils import chunk_document
 import requests
 import faiss
 import spacy
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 
 load_dotenv()
 
@@ -97,15 +101,16 @@ def chatbot(pdf_path, query):
     return answer
 
 def get_answer_from_local_model(query, context):
+    logging.info("Getting response from local model")
     import json
     url = 'http://localhost:11434/api/generate'  
     payload = {
         'model': "mistral",
-        'prompt': f"""Sos Asistente especializado en Juego de Tronos. Voy a proveerte de una pregunta o mensaje y su contexto. Necesito que elabores una respuesta basandote en el contexto. Si el contexto y la pregunta no estuvieran relacionados, solo responde que no hay relacion entre ellos, sin más detalles.
+        'prompt': f"""Sos Asistente experto en Juego de Tronos. Voy a proveerte de un mensaje y un potencial contexto proveniente de el texto de Juego de Tronos. Vas a analizar el mensaje y el contexto. Luego vas a elaborar una respuesta basandote en ambos. Si el contexto y la pregunta no estuvieran relacionados, solo responde que no hay relacion entre ellos, sin más detalles.
         
         Contexto: ```{context}```
          
-        Pregunta: {query}
+        Mensaje: {query}
         
         """,
         'temperature': 0.1

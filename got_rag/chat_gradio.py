@@ -4,6 +4,8 @@ from engine import run, load_data, load_index
 _, chunk_id_mapping = load_data('../data/juego_de_tronos_chunks_300.json')
 index = load_index('../index_juego_de_tronos_chunk_300.ann', 768)
 
+
+
 # Función para manejar las interacciones
 def chatbot_response(user_message):
     # Lógica básica del chatbot
@@ -12,11 +14,13 @@ def chatbot_response(user_message):
     elif "adiós" in user_message.lower():
         return "Adiós, ¡que tengas un gran día!"
     else:
-        llm_response, _ = run(user_message, index, chunk_id_mapping)
+        llm_response, _ = run(user_message, index, chunk_id_mapping, model_type=model_type)
         return llm_response
 
 # Interfaz de Gradio
 with gr.Blocks() as demo:
+    model_type = gr.Radio(["local", "openai"], label="Selecciona el modelo:")
+    #model_type = model_type.value.lower()
     gr.Markdown("## Chatbot con Gradio")
     chat_box = gr.Chatbot()
     user_input = gr.Textbox(label="Escribe tu mensaje:")

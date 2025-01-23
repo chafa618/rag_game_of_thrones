@@ -111,7 +111,7 @@ def get_answer_from_local_model(query, context):
     url = 'http://localhost:11434/api/generate'  
     payload = {
         'model': "mistral",
-        'prompt': f"Contexto: {context}\nPregunta: {query}\nRespuesta:",
+        'prompt': f"Contexto: {context}\nPregunta: {query}",
         'temperature': 0.1
     }
     
@@ -163,3 +163,12 @@ def chatbot_faiss(pdf_path, query, index_file_path=None):
     answer = get_answer_from_local_model(preprocessed_query, context)
     return answer
 
+if __name__=='__main__':
+    pdf_path = '../Juego de tronos - Canción de hielo y fuego 1 (1) copy.pdf'
+    query = 'Quien es Jon Snow?'
+    print("\nChatbot:")
+    print(chatbot(pdf_path, query))
+    print("\nChatbot Local:")
+    print(chatbot_local(pdf_path, query))
+    print("\nChatbot FAISS:")
+    print(chatbot_faiss(pdf_path, query))
