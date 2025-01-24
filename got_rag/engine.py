@@ -1,59 +1,32 @@
 import annoy
 from sentence_transformers import SentenceTransformer
 import json
-#from chatbot import get_answer_from_local_model, get_answer_from_openai
+from embeddings_es import get_rag_candidates, load_data, load_index, get_rag_candidates_openai
 from chat_completions import get_answer_from_ollama, get_answer_from_openai
 import logging
-
-
-model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
-
-
-def get_embeddings(text):
-    return model.encode(text)
-
-
-def load_data(path):
-    with open(path, 'r', encoding='utf-8') as json_file:
-        json_data = json.load(json_file)
-        
-    mapping = make_mapping(json_data)
-    return json_data, mapping
-
-
-def make_mapping(json_data):
-    chunk_id_mapping = {}
-    for chunk in json_data:
-        chunk_id_mapping[chunk["chunk_id"]] = chunk
-    return chunk_id_mapping
-
-
-def load_index(path, emb_size):
-    index = annoy.AnnoyIndex(emb_size, 'angular')
-    index.load(path)
-    return index
-
-
-def process_query(query, index, chunk_id_mapping):
-    embedding_pregunta = get_embeddings(query)
-    ids_potenciales_respuestas = index.get_nns_by_vector(embedding_pregunta, 5)
-    potenciales_respuestas = [chunk_id_mapping[idx] for idx in ids_potenciales_respuestas]
-    texto_potencial = [chunk for chunk in potenciales_respuestas]
-    return texto_potencial, potenciales_respuestas
-
-
-def run(query, index, chunk_id_mapping, model_type='local'):
-    _, candidatos = process_query(query, index, chunk_id_mapping)
-    #print("#####\n\n", _, "\n\n#####")
-    if model_type == 'local':
-        llm_respuesta = get_answer_from_ollama(query, candidatos)
-    else:
-        llm_respuesta = get_answer_from_openai(query, candidatos)
-    return llm_respuesta, candidatos
+from concurrent.futures import ThreadPoolExecutor
 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
+
+
+def run(query, index, openai_embeddings_index, chunk_id_mapping, model_type='local'):
+    candidatos = get_rag_candidates(model, query, index, chunk_id_mapping)
+    openai_candidatos = get_rag_candidates_openai(query, openai_embeddings_index, chunk_id_mapping)
+    texts = [candidato['preprocess_content'] for candidato in candidatos]
+    texts2 = [candidato['preprocess_content'] for candidato in openai_candidatos]
+    if model_type == 'local':
+        llm_respuesta = get_answer_from_ollama(query, texts)
+        llm_respuesta2 = get_answer_from_ollama(query, texts2)
+        logging.info('RESPUESTA FARLOPA', llm_respuesta2)
+    else:
+        llm_respuesta = get_answer_from_openai(query, texts)
+    return llm_respuesta
+
+
 
 def run_session(index, chunk_id_mapping, model_type='local'):
     """
@@ -84,9 +57,9 @@ def run_session(index, chunk_id_mapping, model_type='local'):
 
 if __name__ == '__main__':
     # Load data and index
-    _, chunk_id_mapping = load_data('../data/jdt_chunks_sentences_512.json')
-    index = load_index('index_juego_de_tronos_chunk_512.ann', 768)
-    
+    _, chunk_id_mapping = load_data('../data/juego_de_tronos_chunks_300.json')
+    index = load_index('index_juego_de_tronos_chunk_300.ann', 768)
+    index_openai = load_index('index_juego_de_tronos_chunks_512_openai.ann', 1536)
     # Configure logging to save to a file
     logging.basicConfig(filename='llm_responses.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     
@@ -98,13 +71,17 @@ if __name__ == '__main__':
         
         logging.info(f"Received query: {query}")
         
-        # Run local model
-        local_llm_respuesta, local_candidatos = run(query, index, chunk_id_mapping, 'local')
+        # Run both models concurrently
+        
+        with ThreadPoolExecutor() as executor:
+            future_local = executor.submit(run, query, index, index_openai, chunk_id_mapping, 'local')
+            future_openai = executor.submit(run, query, index, index_openai, chunk_id_mapping, 'openai')
+            
+            local_llm_respuesta = future_local.result()
+            openai_llm_respuesta = future_openai.result()
+        
         logging.info("Generated response from local model:")
         logging.info(local_llm_respuesta)
         
-        # Run OpenAI model
-        #openai_llm_respuesta, openai_candidatos = run(query, index, chunk_id_mapping, 'openai')
-        #logging.info("Generated response from OpenAI model:")
-        #logging.info(openai_llm_respuesta)
-        
+        logging.info("Generated response from OpenAI model:")
+        logging.info(openai_llm_respuesta)

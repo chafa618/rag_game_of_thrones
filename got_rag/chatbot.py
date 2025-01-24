@@ -89,7 +89,7 @@ def get_answer_from_openai(query, context):
             {"role": "developer", "content": "."},
             {
                 "role": "user",
-                "content": f"Contexto: {context}\nPregunta: {query}\nRespuesta:"
+                "content": f"Contexto: {context}\nPregunta: {query}"
             },
         ]
     )
