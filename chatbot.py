@@ -4,7 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import openai
 import os
 from dotenv import load_dotenv
-from utils import chunk_document
+from got_rag.utils import chunk_document
 import requests
 import faiss
 import spacy

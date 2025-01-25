@@ -18,25 +18,25 @@ class QueryRequest(BaseModel):
 
 class ChatBot:
     def __init__(self, llm_engine):
-        self.model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
+        self.embeddings_model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
         self.dc, self.tfidf = get_dc_cls()
-        _, self.chunk_id_mapping = load_data('../data/jdt_chunks_sentences_512.json')
+        self.llm = self.get_llm_engine(llm_engine)
         self.index = load_index('index_juego_de_tronos_chunk_512.ann', 768)
-
+        _, self.chunk_id_mapping = load_data('../data/jdt_chunks_sentences_512.json')
+        
     def classify_message(self, message: str) -> str:
-        """
-        Classify the message to determine if it should be handled by LLM or RAG.
-        """
-        if "documento" in message.lower() or "archivo" in message.lower():
-            return "RAG"
-        return "LLM"
+        dc_prediction = predict(message, self.dc, self.tfidf)
+        return dc_prediction
+    
+    
 
     async def get_response(self, query: str, context: Optional[str] = "") -> str:
         classification = self.classify_message(query)
-        if classification == "LLM":
+        if classification == "got":
+            candidates = await asyncio.to_thread(get_rag_candidates, self.model, query, self.index, self.chunk_id_mapping)
             return await asyncio.to_thread(get_answer_from_openai, query, context)
         else:
-            candidates = await asyncio.to_thread(get_rag_candidates, self.model, query, self.index, self.chunk_id_mapping)
+
             logging.info(candidates)
             return await asyncio.to_thread(get_answer_from_ollama, query, candidates)
 

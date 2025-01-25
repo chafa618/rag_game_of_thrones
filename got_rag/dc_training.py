@@ -211,34 +211,27 @@ def build_data():
     return df
 
 def train(df):
-    # Dividir en conjunto de entrenamiento y prueba
     X_train, X_test, y_train, y_test = train_test_split(
         df["norm_sentence"], df["label"], test_size=0.2, random_state=42
     )
-
-    # Vectorización con TF-IDF
     tfidf = TfidfVectorizer(ngram_range=(1, 2), max_features=5000)  # Usa unigramas y bigramas
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_test_tfidf = tfidf.transform(X_test)
 
-    # Entrenar un clasificador
     clf = MultinomialNB()
     clf.fit(X_train_tfidf, y_train)
 
-    # Evaluar el modelo
     y_pred = clf.predict(X_test_tfidf)
     print("Accuracy:", accuracy_score(y_test, y_pred))
     print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
-    # Guardar el modelo y el vectorizador
-    joblib.dump(clf, "dc_got_nb.pkl")  # Guarda el clasificador
-    joblib.dump(tfidf, "tfidf_vectorizer.pkl")  # Guarda el vectorizador
+    joblib.dump(clf, "dc_got_nb.pkl")  
+    joblib.dump(tfidf, "tfidf_vectorizer.pkl")
     print("Modelo y vectorizador guardados exitosamente.")
     return tfidf, clf
 
 
 def get_dc_cls():
-    # Cargar el modelo y el vectorizador
     loaded_model = joblib.load("../dc_got_nb.pkl")
     loaded_vectorizer = joblib.load("../tfidf_vectorizer.pkl")
     return loaded_model, loaded_vectorizer
@@ -250,6 +243,7 @@ def predict(text, model, vectorizer):
     X_new_tfidf = vectorizer.transform([norm_text])
     predictions = model.predict(X_new_tfidf)
     label = 'got' if predictions == 1 else 'commons'
+    
     logging.info(f"model: DC, label: {label}")
     return label
 
