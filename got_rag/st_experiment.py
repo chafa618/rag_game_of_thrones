@@ -14,9 +14,6 @@ def classify_message(message: str) -> str:
     En un caso real, podrías usar un modelo de clasificación 
     entrenado, o alguna heurística más avanzada.
     """
-    # Regla muy básica de ejemplo: 
-    # Si incluye la palabra 'documento' -> RAG, 
-    # si no -> LLM.
     response = requests.post(f"{FASTAPI_URL}/classify_domain", json={"query": message, "context": ""})
     if response.status_code == 200:
         return response.json().get("answer", "No response")
@@ -40,14 +37,17 @@ def call_commons_llm(user_input: str) -> str:
 # ============================
 # 3. Simulación de llamada a RAG
 # ============================
-def call_rag(user_input: str, model: str = "ollama") -> str:
+def call_rag(user_input: str, model: str = "local") -> str:
     """
     Función que llama a un flujo RAG (por ej. búsqueda en vector store + LLM).
     En un escenario real, harías:
       1) Búsqueda de documentos relevantes.
       2) Generación de respuesta basada en esos documentos.
     """
-    response = requests.post(f"{FASTAPI_URL}/ollama", json={"query": user_input, "context": ""})
+    if model == 'local':
+        response = requests.post(f"{FASTAPI_URL}/ollama", json={"query": user_input, "context": ""})
+    else: 
+        response = requests.post(f"{FASTAPI_URL}//openai", json={"query": user_input, "context": ""})
     if response.status_code == 200:
         return response.json().get("answer", "No response")
     else:
@@ -57,8 +57,9 @@ def call_rag(user_input: str, model: str = "ollama") -> str:
 # 4. Aplicación de Streamlit
 # ============================
 def main():
-    st.title("Chatbot con Streamlit (LLM y RAG)")
-
+    st.title("Chatbot Sobre Canción de hielo y Fuego")
+    llm_engine = st.selectbox('LLM', ['openai', 'local'])
+    
     # Inicializa la sesión para almacenar el historial de la conversación.
     if "messages" not in st.session_state:
         st.session_state["messages"] = []
@@ -86,7 +87,7 @@ def main():
             if classification == "commons":
                 response = call_commons_llm(user_input)
             else:
-                response = call_rag(user_input)
+                response = call_rag(user_input, llm_engine)
 
             # 4. Agregamos la respuesta del bot al historial.
             st.session_state["messages"].append(("Bot", response))

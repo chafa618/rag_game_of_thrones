@@ -6,10 +6,12 @@ import annoy
 import os
 import openai
 from dotenv import load_dotenv
+import numpy as np
+#from functools import lru_cache
 
 load_dotenv()
 
-
+#@lru_cache(maxsize=128)
 def get_embeddings(model, text):
     return model.encode(text)
 
@@ -110,17 +112,21 @@ def postprocess_candidates(potenciales_respuestas, distances):
 
 def get_rag_candidates(embeddings_model, query, index, chunk_id_mapping):
     embedding_pregunta = get_embeddings(embeddings_model, query)
-    ids_potenciales_respuestas, distances = index.get_nns_by_vector(embedding_pregunta, 10, include_distances=True)
+    ids_potenciales_respuestas, distances = index.get_nns_by_vector(embedding_pregunta, 5, include_distances=True)
     potenciales_respuestas = [chunk_id_mapping[idx] for idx in ids_potenciales_respuestas]
     postprocess_respuestas = postprocess_candidates(potenciales_respuestas, distances)
-    return postprocess_respuestas
+    if len(postprocess_respuestas)<=1:
+        logging.warning('No candidates over threshold!')
+    return potenciales_respuestas
 
 def get_rag_candidates_openai(query, index, chunk_id_mapping):
     openai_embeddings = get_openai_embeddings(query)
     ids_potenciales_respuestas, distances = index.get_nns_by_vector(openai_embeddings, 5, include_distances=True)
     potenciales_respuestas = [chunk_id_mapping[idx] for idx in ids_potenciales_respuestas]
     postprocess_respuestas = postprocess_candidates(potenciales_respuestas, distances)
-    return postprocess_respuestas
+    if len(postprocess_respuestas)<=1:
+        logging.warning('No candidates over threshold!')
+    return potenciales_respuestas
 
 
 if __name__ == "__main__":
