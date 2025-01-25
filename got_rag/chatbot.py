@@ -1,174 +1,46 @@
-import fitz  # PyMuPDF
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import openai
-import os
+import logging
+from typing import Optional
+from pydantic import BaseModel
+from chat_completions import get_answer_from_ollama, get_answer_from_openai, get_commons_llm_answer
+from embeddings_es import get_rag_candidates, load_data, load_index
+from dc_training import get_dc_cls, predict
+from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
-#from utils import chunk_document
-import requests
-import faiss
-import spacy
+import asyncio
 
 load_dotenv()
 
-openai.api_key = os.environ["OPENAI_API_KEY"]
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-nlp = spacy.load("es_core_news_sm")
+class QueryRequest(BaseModel):
+    query: str
+    context: Optional[str]
 
-def chunk_document(document, max_size=300, overlap=10):
-    tokens = document.split()
-    chunks = []
-    tokens_count = len(tokens)
-    i = 0
-    while i < tokens_count:
-        chunk = tokens[i:i + max_size]
-        chunks.append(' '.join(chunk))
-        i += max_size - overlap
-    return chunks
+class ChatBot:
+    def __init__(self, llm_engine):
+        self.model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
+        self.dc, self.tfidf = get_dc_cls()
+        _, self.chunk_id_mapping = load_data('../data/jdt_chunks_sentences_512.json')
+        self.index = load_index('index_juego_de_tronos_chunk_512.ann', 768)
 
-def extract_text_from_pdf(pdf_path):
-    doc = fitz.open(pdf_path, )
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+    def classify_message(self, message: str) -> str:
+        """
+        Classify the message to determine if it should be handled by LLM or RAG.
+        """
+        if "documento" in message.lower() or "archivo" in message.lower():
+            return "RAG"
+        return "LLM"
 
-def index_text_v1(text):
-    sentences = chunk_document(text, max_size=50, overlap=5) # text.split('. ')
-    print(sentences)
-    vectorizer = TfidfVectorizer()
-    vectorizer_matrix = vectorizer.fit_transform(sentences)
-    return sentences, vectorizer, vectorizer_matrix
+    async def get_response(self, query: str, context: Optional[str] = "") -> str:
+        classification = self.classify_message(query)
+        if classification == "LLM":
+            return await asyncio.to_thread(get_answer_from_openai, query, context)
+        else:
+            candidates = await asyncio.to_thread(get_rag_candidates, self.model, query, self.index, self.chunk_id_mapping)
+            logging.info(candidates)
+            return await asyncio.to_thread(get_answer_from_ollama, query, candidates)
 
-
-def sentence_tokenizer_spacy(text):
-    doc = nlp(text)
-    return [sent.text for sent in doc.sents]
-
-def index_text(text):
-
-    sentences = chunk_document(text, max_size=300, overlap=50)
-    vectorizer = TfidfVectorizer()
-    vectorized_sentences = vectorizer.fit_transform(sentences).toarray()
-    
-    # Create FAISS index
-    dimension = vectorized_sentences.shape[1]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(vectorized_sentences)
-    
-    return sentences, vectorizer, index
-
-def save_faiss_index(index, file_path):
-    faiss.write_index(index, file_path)
-
-def load_faiss_index(file_path):
-    return faiss.read_index(file_path)
-
-def get_relevant_text(query, sentences, vectorizer, index):
-    query_vec = vectorizer.transform([query]).toarray()
-    _, relevant_idx = index.search(query_vec, 1)
-    return sentences[relevant_idx[0][0]]
-
-
-def get_relevant_text_v1(query, sentences, vectorizer, vectorizer_matrix):
-    query_vec = vectorizer.transform([query])
-    similarity = cosine_similarity(query_vec, vectorizer_matrix).flatten()
-    relevant_idx = similarity.argmax()
-    return sentences[relevant_idx]
-
-def get_relevant_text(query, sentences, vectorizer, index):
-    query_vec = vectorizer.transform([query]).toarray()
-    _, relevant_idx = index.search(query_vec, 1)
-    return sentences[relevant_idx[0][0]]
-
-def get_answer_from_openai(query, context):
-    client = openai.Client(api_key=os.environ["OPENAI_API_KEY"])
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo-16k",
-        messages=[
-            {"role": "developer", "content": "."},
-            {
-                "role": "user",
-                "content": f"Contexto: {context}\nPregunta: {query}"
-            },
-        ]
-    )
-    return response.choices[0].message
-
-def chatbot(pdf_path, query):
-    text = extract_text_from_pdf(pdf_path)
-    # sentences = text.split('. ')
-    # vectorizer = TfidfVectorizer().fit_transform(sentences)
-    sentences, vectorizer, vectorizer_matrix = index_text(text)
-    context = get_relevant_text(query, sentences, vectorizer, 
-                                vectorizer_matrix)
-    print(context)
-    answer = get_answer_from_openai(query, context)
-    return answer
-
-def get_answer_from_local_model(query, context):
-    import json
-    url = 'http://localhost:11434/api/generate'  
-    payload = {
-        'model': "mistral",
-        'prompt': f"Contexto: {context}\nPregunta: {query}",
-        'temperature': 0.1
-    }
-    
-    response = requests.post(url, json=payload)
-    print(type(response))
-    try:
-        # Split the response text into individual JSON objects
-        response_text = response.text.strip().split('\n')
-        responses = [json.loads(line) for line in response_text]
-        
-        # Combine the 'response' fields from each JSON object
-        combined_response = ''.join([resp['response'] for resp in responses])
-    except (requests.exceptions.JSONDecodeError, KeyError) as e:
-        print("Error processing response:", e)
-        print("Response text:", response.text)
-        return "Error: Unable to process response from local model."
-
-    return combined_response
-
-
-def chatbot_local(pdf_path, query):
-    text = extract_text_from_pdf(pdf_path)
-    preprocessed_text = text # preprocess_text(text)
-    sentences, vectorizer, vectorized_sentences = index_text(preprocessed_text)
-    preprocessed_query = query # preprocess_text(query)
-    context = get_relevant_text(preprocessed_query, sentences, vectorizer, vectorized_sentences)
-    print(context)
-    answer = get_answer_from_local_model(preprocessed_query, context)
-    return answer
-
-
-
-def chatbot_faiss(pdf_path, query, index_file_path=None):
-    if index_file_path and os.path.exists(index_file_path):
-        index = load_faiss_index(index_file_path)
-        sentences = chunk_document(extract_text_from_pdf(pdf_path), max_size=300, overlap=50)
-        vectorizer = TfidfVectorizer()
-        vectorizer.fit(sentences)
-    else:
-        text = extract_text_from_pdf(pdf_path)
-        preprocessed_text = text
-        sentences, vectorizer, index = index_text(preprocessed_text)
-        if index_file_path:
-            save_faiss_index(index, index_file_path)
-    
-    preprocessed_query = query
-    context = get_relevant_text(preprocessed_query, sentences, vectorizer, index)
-    print(context)
-    answer = get_answer_from_local_model(preprocessed_query, context)
-    return answer
-
-if __name__=='__main__':
-    pdf_path = '../Juego de tronos - Canción de hielo y fuego 1 (1) copy.pdf'
-    query = 'Quien es Jon Snow?'
-    print("\nChatbot:")
-    print(chatbot(pdf_path, query))
-    print("\nChatbot Local:")
-    print(chatbot_local(pdf_path, query))
-    print("\nChatbot FAISS:")
-    print(chatbot_faiss(pdf_path, query))
+# Example usage
+# chatbot = ChatBot()
+# response = asyncio.run(chatbot.get_response("Who is Jon Snow?", "Context from the book..."))
+# print(response)

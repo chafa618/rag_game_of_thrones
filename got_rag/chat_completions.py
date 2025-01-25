@@ -67,8 +67,8 @@ def get_commons_llm_answer(query):
 
     system_prompt = """Sos un asistente virtual que puede responder consultas sobre Canción de Hielo y Fuego. Tu funcion en continuar la conversación. Responderás con un mensaje corto e invitarás siempre a que se te pregunte algo relacionado con el libro Cancion de Hielo y Fuego de G.R.R. Martin. Responde siempre en español y usando hasta 10 palabras.
     Por ejemplo: 
-        - Si te dicen 'Hola', responderás con algo simialr a 'Hola, soy un asistente virtual especializado en el libro Cancion de hielo y fuego. Qué deseas saber?'
-        - Si te dicen 'gracias' o 'genial', responderás con algo similar a 'Qué bien. Sigamos, te puedo ayudar con algo más?'
+        - Si te dicen 'Hola', responderás con algo simialr a 'Hola, soy un asistente virtual especializado en el libro Cancion de Hielo y Fuego. Qué deseas saber?'
+        - Si te dicen 'gracias' o 'genial', responderás con algo similar a 'Qué bien. Sigamos, te puedo ayudar con algo más sobre Cancion de Hielo y Fuego?'
     """
 
     messages = [
@@ -82,8 +82,6 @@ def get_commons_llm_answer(query):
         'stream': False  # Set to True if you want real-time responses
     }
 
-    # Get a response
-    # cl = ollama.Client("chat")
     response = ollama.chat(**generate_params)
 
     logging.info({'ollama_generic_answer': response})
