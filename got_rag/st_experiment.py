@@ -1,5 +1,6 @@
 import streamlit as st
 import asyncio
+import time
 from chatbot import ChatBot
 
 INDEX_LOCAL_PATH = 'index_juego_de_tronos_chunk_512.ann'
@@ -21,23 +22,26 @@ def init_chatbot(llm_engine: str):
 
 def display_messages():
     """Muestra el historial de mensajes almacenados en la sesión."""
-    with st.container(border=True):
-        if len(st.session_state['messages']) > 0:
-            for role, text in st.session_state["messages"]:
-                if role == "User":
-                    st.markdown(f"**:speaking_head_in_silhouette: Tú:** {text}")
-                else:
-                    st.markdown(f"**:robot_face: Bot:** {text}")
+    for role, text in st.session_state["messages"]:
+        if role == "User":
+            st.markdown(f":bust_in_silhouette: **{text}**")
         else:
-            text = ("Soy un asistente especializado en la novela Canción de Hielo y Fuego "
-                    "de G.G.R. Martin. Preguntame algo relacionado con el libro.\nPor ejemplo: "
-                    "\n- ¿Quién es Eddard Stark?\n- Qué animal decora el estandarte de la Casa Baratheon?")
-            st.markdown(f"**:robot_face: Bot:** {text}")
+            st.markdown(f":robot_face: {text}")
+
+
+def add_welcome_message():
+    """Agrega un mensaje de bienvenida si no está ya en la sesión."""
+    if "welcome_message_shown" not in st.session_state:
+        time.sleep(0.5)  # Simula que el bot está escribiendo
+        welcome_message = "¡Hola! Soy el ChatBot de Juego de Tronos. Preguntame lo que quieras sobre la saga."
+        st.session_state["messages"].append(("Bot", welcome_message))
+        st.session_state["welcome_message_shown"] = True
 
 
 def main():
-    st.set_page_config(page_title="Juego de Tronos Chatbot", layout="wide")
+    st.set_page_config(page_title="Chatbot :robot_face:", layout="wide")
 
+    # Inicializar el estado de la sesión
     if 'llm_choice' not in st.session_state:
         st.session_state.llm_choice = None
     if "messages" not in st.session_state:
@@ -46,8 +50,7 @@ def main():
     # Menú de selección de motor LLM
     if st.session_state.llm_choice is None:
         st.title("Selecciona el motor de LLM")
-        llm_choice = st.selectbox(
-            "Selecciona el motor de LLM:", ["local", "openai"])
+        llm_choice = st.selectbox("Selecciona el motor de LLM:", ["local", "openai"])
         if st.button("Confirmar selección"):
             st.session_state.llm_choice = llm_choice
             st.rerun()
@@ -55,14 +58,18 @@ def main():
     # Mostrar configuración y permitir cambio
     if st.session_state.llm_choice is not None:
         st.sidebar.title("Configuración")
-        st.sidebar.write(
-            f"Motor LLM seleccionado: {st.session_state.llm_choice}")
+        st.sidebar.write(f"Motor LLM seleccionado: {st.session_state.llm_choice}")
         if st.sidebar.button("Cambiar selección de motor LLM"):
             st.session_state.llm_choice = None
-            st.session_state['messages'] = []
+            st.session_state["messages"] = []
+            st.session_state.pop("welcome_message_shown")
+            # Resetear valores al cambiar de llm_choice
             st.rerun()
 
-        # UI LAYOUT
+        # Agregar mensaje de bienvenida si es la primera vez
+        add_welcome_message()
+        
+        # UI principal
         st.title("Juego de Tronos Chatbot")
 
         # Contenedor para entrada de texto y botón juntos
@@ -70,7 +77,7 @@ def main():
         with col1:
             user_input = st.text_input("Escribe tu mensaje aquí:", key="user_input")
         with col2:
-            send_button = st.button("Enviar", key="send_button", )
+            send_button = st.button("Enviar", key="send_button")
 
         # Mostrar historial
         display_messages()

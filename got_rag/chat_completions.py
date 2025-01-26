@@ -125,28 +125,27 @@ class CommonsOllamaCompletionWrapper:
     """
 
     def __init__(self,
-                 model_name="qwen:1.8b",
+                 model_name="qwen2:1.5b-instruct",
                  temperature=0.2,
-                 num_ctx=256):
+                 num_ctx=512):
         """
         Inicializa la clase con un modelo y parámetros de generación.
         
         Args:
             model_name (str): Nombre del modelo a usar
-            temperature (float): Control de aleatoriedad del texto (0.0 determinista - 1.0 creativo).
+            temperature (float): Control de aleatoriedad del texto.
             num_ctx (int): Tamaño del contexto (tokens).
         """
         self.model_name = model_name
         self.temperature = temperature
         self.num_ctx = num_ctx
 
-        self.system_prompt = """Sos un asistente virtual que puede responder consultas sobre Canción de Hielo y Fuego. Tu función es continuar la charla y conducir al usuario hacia el libro. Responderás con un mensaje corto e invitarás siempre 
+        self.system_prompt = """Sos un asistente virtual que solamente puede responder consultas sobre Canción de Hielo y Fuego. Tu función es continuar la charla y conducir al usuario hacia el libro. Responderás con un mensaje corto e invitarás siempre 
         a que se te pregunte algo relacionado con el libro Cancion de Hielo y Fuego de G.R.R. Martin. 
-        Responde siempre en español y usando hasta 10 palabras.
+        Responde siempre en español y usando hasta 20 palabras.
         Por ejemplo:
             - Si te dicen 'Hola', responderás con algo similar a 'Hola, soy un asistente virtual especializado en el libro Canción de Hielo y Fuego. ¿Qué deseas saber?'
             - Si te dicen 'gracias' o 'genial', responderás con algo similar a 'Qué bien. Sigamos, ¿te puedo ayudar con algo más sobre Cancion de Hielo y Fuego?'
-            - Si te preguntan algo que no tiene relacion al libro, simplemente dirás que no puedes responder eso, e invitarás al otro a que te haga preguntas sobre Canción de Hielo y Fuego.
             """
 
     def get_answer(self, query):
@@ -188,7 +187,7 @@ class OllamaRAGCompletionWrapper:
     """
 
     def __init__(self,
-                 model_name="mistral:7b",
+                 model_name="qwen2:1.5b-instruct",
                  temperature=0.1,
                  num_ctx=512):
         """
