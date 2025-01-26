@@ -8,9 +8,9 @@ from chatbot import ChatBot
 ## Pero creo que es suficiente por ahora dejarlo acá para la demo. 
 
 
-INDEX_LOCAL_PATH = 'index_juego_de_tronos_chunk_512.ann'
-MAPPING_PATH = '../data/jdt_chunks_sentences_512.json'
-INDEX_OPENAI_PATH = 'index_juego_de_tronos_chunks_512_openai.ann'
+INDEX_LOCAL_PATH = 'indexes/index_juego_de_tronos_chunk_512.ann'
+MAPPING_PATH = 'data/jdt_chunks_sentences_512.json'
+INDEX_OPENAI_PATH = 'indexes/index_juego_de_tronos_chunks_512_openai.ann'
 
 
 def init_chatbot(llm_engine: str):

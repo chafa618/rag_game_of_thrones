@@ -7,6 +7,7 @@ import os
 import openai
 from dotenv import load_dotenv
 import numpy as np
+import argparse
 #from functools import lru_cache
 
 load_dotenv()
@@ -27,7 +28,6 @@ def get_openai_embeddings(text):
         input=text
     )
 
-    #print(response)
     return response.data[0].embedding
 
 def create_index_openai(chunks_file, index_name):
@@ -37,7 +37,7 @@ def create_index_openai(chunks_file, index_name):
     with open(chunks_file, 'r', encoding='utf-8') as json_file:
         json_data = json.load(json_file)
 
-    embedding_size = 1536  # Updated embedding size for text-embedding-ada-002
+    embedding_size = 1536
 
     chunk_id_mapping = {}
     for chunk in json_data:
@@ -66,7 +66,6 @@ def create_index(model, chunks_file, index_name):
         json_data = json.load(json_file)
 
     embedding_size = 768
-    #index_name = "index_juego_de_tronos_chunk_300.ann"
 
     chunk_id_mapping = {}
     for chunk in json_data:
@@ -235,7 +234,7 @@ class LocalEmbeddings:
         candidates = [self.chunk_id_mapping[idx] for idx in ids]
         postprocess_respuestas = postprocess_candidates(candidates, distances)
         if len(postprocess_respuestas) <= 1:
-            logging.warning('No candidates over threshold!')
+            logging.warning(f'No candidates over threshold!\n-DISTANCES: {distances}')
         return candidates
 
 
@@ -264,14 +263,18 @@ class EmbeddingModel:
 
 
 if __name__ == "__main__":
-    #logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.info("Loading model...")
-    model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
-    logging.info("Model loaded")
-    create_index(model, "../data/jdt_chunks_sentences_256.json", "index_juego_de_tronos_chunk_256.ann")
-    #create_index(model, "../jdt_chunks_sentences_512.json", "index_juego_de_tronos_chunk_512.ann")
-    #create_index(model, "../jdt_chunks_sentences_1024.json", "index_juego_de_tronos_chunk_1024.ann")
-    data, mapping = load_data("../data/jdt_chunks_sentences_256.json")
-    #index = load_index("index_juego_de_tronos_chunk_512.ann", 768)
-    #create_index_openai("../data/jdt_chunks_sentences_512.json", "index_juego_de_tronos_chunks_512_openai.ann")
-        
+    parser = argparse.ArgumentParser(description="Create an Annoy index for text embeddings.")
+    parser.add_argument('--model', type=str, default='sentence-transformer', choices=['sentence-transformer', 'openai'], help='The model to use for embeddings.')
+    parser.add_argument('--chunks_file', type=str, required=True, help='Path to the JSON file containing text chunks.')
+    parser.add_argument('--index_name', type=str, required=True, help='Name of the index file to create.')
+
+    args = parser.parse_args()
+
+    if args.model == 'sentence-transformer':
+        logging.info("Loading SentenceTransformer model...")
+        model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
+        logging.info("Creating Index file Using SentenceTransformers")
+        create_index(model, args.chunks_file, args.index_name)
+    elif args.model == 'openai':
+        logging.info("Creating Index file using OpenAi")
+        create_index_openai(args.chunks_file, args.index_name)

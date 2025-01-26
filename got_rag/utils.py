@@ -1,35 +1,18 @@
-import fitz  # PyMuPDF
 import json
 import pdf4llm
-
+import logging
 from llama_index.core.node_parser import SentenceSplitter
+
+#logging config
+
 
 
 def parse_pdf_to_md(path=None):
+    logging.info(f'Parseando {path}...')
     md_read = pdf4llm.LlamaMarkdownReader()
-    path = path if path else "Juego de tronos - Canción de hielo y fuego 1 (1) copy.pdf"
+    path = path if path else "data/Juego de tronos - Canción de hielo y fuego 1 (1) copy.pdf"
     data = md_read.load_data()
     return data
-
-
-def extract_text_from_pdf(pdf_path):
-    doc = fitz.open(pdf_path)
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
-
-
-def chunk_document(document, max_size=300, overlap=10):
-    tokens = document.split()
-    chunks = []
-    tokens_count = len(tokens)
-    i = 0
-    while i < tokens_count:
-        chunk = tokens[i:i + max_size]
-        chunks.append(' '.join(chunk))
-        i += max_size - overlap
-    return chunks
 
 
 def preprocess_text(text):
@@ -46,7 +29,8 @@ def save_json(data, file):
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
-def chunk_text(data, size, overlap):
+def chunk_text(data, size=512, overlap=50):
+    logging.info('Generando Nodos desde PDF ...')
     splitter = SentenceSplitter(
         chunk_size=size,
         chunk_overlap=overlap,
@@ -56,6 +40,7 @@ def chunk_text(data, size, overlap):
 
 
 def process_nodes(nodes):
+    logging.info('Generando chunks desde nodos ...')
     chunks_sentences = []
     for id, node in enumerate(nodes):
         page = node.metadata['page']
@@ -63,3 +48,10 @@ def process_nodes(nodes):
         chunk = {'chunk_id': id, 'page': page, 'preprocess_content': text, 'content': node.text}
         chunks_sentences.append(chunk)
     return chunks_sentences
+
+
+def build_chunks_json():
+    pdf_md = parse_pdf_to_md()
+    nodes = chunk_text(pdf_md)
+    chunks_sentences = process_nodes(nodes)
+    save_json(chunks_sentences, "data/jdt_chunks_sentences_512.json")
