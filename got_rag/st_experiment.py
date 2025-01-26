@@ -79,7 +79,7 @@ def main():
         # UI principal
         st.title("Juego de Tronos Chatbot")
 
-        # Contenedor para entrada de texto y botón juntos
+        # Contenedor para entrada de texto y botón
         col1, col2 = st.columns([4, 1])
         with col1:
             user_input = st.text_input("Escribe tu mensaje aquí:", key="user_input")

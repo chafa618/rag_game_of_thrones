@@ -21,19 +21,21 @@ def dowload_nltk_resources():
         nltk.download("punkt_tab")
         nltk.download("stopwords")
 
+
 def preprocess_text(text):
     """
     Tokeniza el texto y elimina las palabras vacías.
     """
     stop_words = set(stopwords.words("spanish"))
     sentences = sent_tokenize(text)
-    
+
     processed_sentences = [
         " ".join([word for word in word_tokenize(sentence.lower()) if word.isalnum() and word not in stop_words])
         for sentence in sentences
     ]
     print(processed_sentences)
     return " ".join(processed_sentences)
+
 
 def build_data():
     common_sentences, got_sentences = get_sentences()
@@ -44,9 +46,10 @@ def build_data():
         data.append([gd, 1])
     df = pd.DataFrame(data, columns=['sentence', 'label'])
     df['norm_sentence'] = df['sentence'].apply(preprocess_text)
-    print(df.info)
-    df = df[df['norm_sentence']!=""]
+
+    df = df[df['norm_sentence'] != ""]
     return df
+
 
 def train(df):
     X_train, X_test, y_train, y_test = train_test_split(
@@ -89,6 +92,7 @@ def predict(text, model, vectorizer):
     label = 'got' if predictions == 1 else 'commons'
     logging.info(f"model: DC, label: {label}")
     return label
+
 
 def get_sentences():
     common_sentences = [
@@ -272,7 +276,8 @@ def get_sentences():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Train a model for detecting Game of Thrones sentences.")
+    parser = argparse.ArgumentParser(
+        description="Train a model for detecting Game of Thrones sentences.")
     parser.add_argument('--train', action='store_true', help='Train the model')
     args = parser.parse_args()
 
