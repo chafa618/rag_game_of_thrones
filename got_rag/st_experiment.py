@@ -1,99 +1,96 @@
 import streamlit as st
-import requests
+import asyncio
+from chatbot import ChatBot
+
+INDEX_LOCAL_PATH = 'index_juego_de_tronos_chunk_512.ann'
+MAPPING_PATH = '../data/jdt_chunks_sentences_512.json'
+INDEX_OPENAI_PATH = 'index_juego_de_tronos_chunks_512_openai.ann'
 
 
-FASTAPI_URL = "http://127.0.0.1:8000"
-# ============================
-# 1. Simulación de clasificadores
-# ============================
-def classify_message(message: str) -> str:
+def init_chatbot(llm_engine: str):
     """
-    Función de ejemplo para clasificar el mensaje del usuario.
-    Dependiendo del texto, retornará 'LLM' o 'RAG'.
-    
-    En un caso real, podrías usar un modelo de clasificación 
-    entrenado, o alguna heurística más avanzada.
+    Inicializa el chatbot con el motor deseado (e.g., 'local', 'openai').
     """
-    response = requests.post(f"{FASTAPI_URL}/classify_domain", json={"query": message, "context": ""})
-    if response.status_code == 200:
-        return response.json().get("answer", "No response")
-    else:
-        return "Error calling DC"
+    try:
+        index = INDEX_LOCAL_PATH if llm_engine == 'local' else INDEX_OPENAI_PATH
+        return ChatBot(llm_engine, index, MAPPING_PATH)
+    except Exception as e:
+        st.error(f"Error al inicializar el ChatBot: {e}")
+        return None
 
-# ============================
-# 2. Simulación de llamada a un LLM
-# ============================
-def call_commons_llm(user_input: str) -> str:
-    """
-    Función que llama a un LLM (por ej. GPT) para generar una respuesta.
-    En un escenario real, aquí harías la llamada a la API de tu modelo (OpenAI, HuggingFace, etc.).
-    """
-    response = requests.post(f"{FASTAPI_URL}/local_common", json={"query": user_input, "context": ""})
-    if response.status_code == 200:
-        return response.json().get("answer", "No response")
-    else:
-        return "Error calling LLM API"
 
-# ============================
-# 3. Simulación de llamada a RAG
-# ============================
-def call_rag(user_input: str, model: str = "local") -> str:
-    """
-    Función que llama a un flujo RAG (por ej. búsqueda en vector store + LLM).
-    En un escenario real, harías:
-      1) Búsqueda de documentos relevantes.
-      2) Generación de respuesta basada en esos documentos.
-    """
-    if model == 'local':
-        response = requests.post(f"{FASTAPI_URL}/ollama", json={"query": user_input, "context": ""})
-    else: 
-        response = requests.post(f"{FASTAPI_URL}//openai", json={"query": user_input, "context": ""})
-    if response.status_code == 200:
-        return response.json().get("answer", "No response")
-    else:
-        return "Error calling RAG API"
+def display_messages():
+    """Muestra el historial de mensajes almacenados en la sesión."""
+    with st.container(border=True):
+        if len(st.session_state['messages']) > 0:
+            for role, text in st.session_state["messages"]:
+                if role == "User":
+                    st.markdown(f"**:speaking_head_in_silhouette: Tú:** {text}")
+                else:
+                    st.markdown(f"**:robot_face: Bot:** {text}")
+        else:
+            text = ("Soy un asistente especializado en la novela Canción de Hielo y Fuego "
+                    "de G.G.R. Martin. Preguntame algo relacionado con el libro.\nPor ejemplo: "
+                    "\n- ¿Quién es Eddard Stark?\n- Qué animal decora el estandarte de la Casa Baratheon?")
+            st.markdown(f"**:robot_face: Bot:** {text}")
 
-# ============================
-# 4. Aplicación de Streamlit
-# ============================
+
 def main():
-    st.title("Chatbot Sobre Canción de hielo y Fuego")
-    llm_engine = st.selectbox('LLM', ['openai', 'local'])
-    
-    # Inicializa la sesión para almacenar el historial de la conversación.
+    st.set_page_config(page_title="Juego de Tronos Chatbot", layout="wide")
+
+    if 'llm_choice' not in st.session_state:
+        st.session_state.llm_choice = None
     if "messages" not in st.session_state:
         st.session_state["messages"] = []
 
-    # Muestra el historial de conversación.
-    for role, text in st.session_state["messages"]:
-        if role == "User":
-            st.markdown(f"**Tú:** {text}")
-        else:
-            st.markdown(f"**Bot:** {text}")
-
-    # Campo de entrada del usuario.
-    user_input = st.text_input("Escribe tu mensaje:", "")
-
-    # Botón para enviar el mensaje.
-    if st.button("Enviar"):
-        if user_input.strip():
-            # 1. Agregamos el mensaje del usuario al historial.
-            st.session_state["messages"].append(("User", user_input))
-
-            # 2. Clasificamos el mensaje.
-            classification = classify_message(str(user_input))
-
-            # 3. Llamamos al sistema adecuado (LLM o RAG).
-            if classification == "commons":
-                response = call_commons_llm(user_input)
-            else:
-                response = call_rag(user_input, llm_engine)
-
-            # 4. Agregamos la respuesta del bot al historial.
-            st.session_state["messages"].append(("Bot", response))
-
-            # Refrescamos la página para mostrar la conversación actualizada.
+    # Menú de selección de motor LLM
+    if st.session_state.llm_choice is None:
+        st.title("Selecciona el motor de LLM")
+        llm_choice = st.selectbox(
+            "Selecciona el motor de LLM:", ["local", "openai"])
+        if st.button("Confirmar selección"):
+            st.session_state.llm_choice = llm_choice
             st.rerun()
+
+    # Mostrar configuración y permitir cambio
+    if st.session_state.llm_choice is not None:
+        st.sidebar.title("Configuración")
+        st.sidebar.write(
+            f"Motor LLM seleccionado: {st.session_state.llm_choice}")
+        if st.sidebar.button("Cambiar selección de motor LLM"):
+            st.session_state.llm_choice = None
+            st.session_state['messages'] = []
+            st.rerun()
+
+        # UI LAYOUT
+        st.title("Juego de Tronos Chatbot")
+
+        # Contenedor para entrada de texto y botón juntos
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            user_input = st.text_input("Escribe tu mensaje aquí:", key="user_input")
+        with col2:
+            send_button = st.button("Enviar", key="send_button", )
+
+        # Mostrar historial
+        display_messages()
+
+        if send_button:
+            if user_input.strip() == "":
+                st.warning("Por favor, ingresa un texto.")
+            else:
+                st.session_state["messages"].append(("User", user_input))
+                chatbot = init_chatbot(st.session_state["llm_choice"])
+
+                if chatbot:
+                    try:
+                        with st.spinner("Generando respuesta..."):
+                            response = asyncio.run(chatbot.get_response(user_input))
+                        st.session_state["messages"].append(("Bot", response))
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al obtener respuesta: {e}")
+
 
 if __name__ == "__main__":
     main()

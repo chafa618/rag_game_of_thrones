@@ -77,7 +77,14 @@ common_sentences = [
     "¿Tienes algún lugar favorito para relajarte?",
     "Me encanta el aroma de este lugar, ¿a ti no?",
     "¿Qué opinas de las bicicletas eléctricas?",
-    "Siempre es bueno aprender algo nuevo, ¿qué piensas?"
+    "Siempre es bueno aprender algo nuevo, ¿qué piensas?",
+    "Buenos Aires",
+    "Argentina",
+    "Clima en Buenos Aires, Argentina",
+    "Quién es Marcelo Tinelli",
+    "Quien ganó el ultimo martin fierro",
+    "Cómo es el clima en Paris?",
+    "Feliz Navidad"
 ]
 got_domain = [
     "¿Quién es el Señor de Invernalia al comienzo de 'Juego de Tronos'?",
@@ -207,7 +214,9 @@ def build_data():
     for gd in got_domain:
         data.append([gd, 1])
     df = pd.DataFrame(data, columns=['sentence', 'label'])
-    df['norm_sentence'] = df['sentence'].apply(lambda x: " ".join(preprocess_text(x)))
+    df['norm_sentence'] = df['sentence'].apply(preprocess_text)
+    print(df.info)
+    df = df[df['norm_sentence']!=""]
     return df
 
 def train(df):
@@ -249,4 +258,5 @@ def predict(text, model, vectorizer):
 
 
 if __name__ == '__main__':
-    get_dc_cls()
+    data = build_data()
+    train(data)

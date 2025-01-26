@@ -11,24 +11,28 @@ from chat_completions import get_answer_from_ollama, get_answer_from_openai, get
 from embeddings_es import get_rag_candidates, get_rag_candidates_openai, load_data, load_index
 from dc_training import get_dc_cls, predict
 
+from chatbot import ChatBot 
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-app = FastAPI()
+INDEX_LOCAL_PATH = 'index_juego_de_tronos_chunk_512.ann'
+MAPPING_PATH = '../data/jdt_chunks_sentences_512.json'
+INDEX_OPENAI_PATH = 'index_juego_de_tronos_chunks_512_openai.ann'
 
-model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
-dc, tfidf = get_dc_cls()
-
-_, chunk_id_mapping = load_data('../data/jdt_chunks_sentences_512.json')
-index = load_index('index_juego_de_tronos_chunks_512_openai.ann', 1536)
-index_olama = load_index('index_juego_de_tronos_chunk_512.ann', 768)
+app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
 
 class QueryRequest(BaseModel):
     query: str
     context: Optional[str]
 
-@app.post("/openai")
+@app.post("/init_chatbot")
+def init_chatbot(llm_engine):
+    index = INDEX_LOCAL_PATH if llm_engine == 'local' else INDEX_OPENAI_PATH
+    return ChatBot(llm_engine, index, MAPPING_PATH)
+
+@app.post("/process_request")
 async def openai_endpoint(request: QueryRequest):
     try:
         candidates = get_rag_candidates_openai(request.query, index, chunk_id_mapping)
