@@ -26,10 +26,10 @@ class ChatBot:
     ----------
     dc_cls : modelo de clasificación de dominio.
     tfidf_vectorizer : vectorizador TF-IDF.
-    commons_handler : manejador de respuestas comunes.
-    index_path : ruta al índice de embeddings.
-    chunks_mapping_path : ruta al archivo de mapeo de chunks.
-    llm : motor LLM seleccionado.
+    commons_handler : handler de respuestas comunes.
+    index_path : path al índice de embeddings.
+    chunks_mapping_path : path al archivo de mapeo de chunks.
+    llm : LLM seleccionado.
     embeddings : embeddings correspondientes al motor LLM seleccionado.
     """
 
@@ -42,9 +42,9 @@ class ChatBot:
         llm_engine : str
             Motor LLM a utilizar ('local' o 'openai').
         index_path : str
-            Ruta al archivo del índice de embeddings.
+            path al index de embeddings.
         mapping_path : str
-            Ruta al archivo de mapeo de chunks.
+            path al archivo de mapeo de chunks.
         """
         self.dc_cls, self.tfidf_vectorizer = get_dc_cls()
         self.commons_handler = CommonsOllamaCompletionWrapper()
@@ -54,7 +54,7 @@ class ChatBot:
 
     def classify_message(self, message: str) -> str:
         """
-        Clasifica el mensaje para determinar si debe ser manejado por LLM o RAG.
+        Clasifica el mensaje para determinar si debe ser manejado por Commons o RAG.
 
         Parámetros:
         -----------
@@ -66,7 +66,8 @@ class ChatBot:
         str
             Clasificación del mensaje ('commons' o 'got').
         """
-        dc_prediction = predict(message, self.dc_cls, self.tfidf_vectorizer)
+        dc_prediction = predict(message.lower(), self.dc_cls, self.tfidf_vectorizer) # Need to be preprocessed
+        logging.debug(f"DC: {dc_prediction}")
         return dc_prediction
 
     def get_llm_engine(self, llm_engine):
@@ -108,9 +109,9 @@ class ChatBot:
         classification = self.classify_message(query)
         if classification == "commons":
             llm_response = self.commons_handler.get_answer(query)
-        else:  # If classification: got
+        else:  # classification: got
             candidates = self.embeddings.get_candidates(query)
-            logging.info(candidates)
+            logging.debug(candidates)
             llm_response = self.llm.get_answer(query, candidates)
         return llm_response
 

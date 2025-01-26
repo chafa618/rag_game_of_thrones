@@ -1,10 +1,6 @@
 import logging
 from typing import Optional
-import openai
-import ollama
 from dotenv import load_dotenv
-import os
-from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from chat_completions import get_answer_from_ollama, get_answer_from_openai, get_commons_llm_answer

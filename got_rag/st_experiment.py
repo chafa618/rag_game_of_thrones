@@ -3,6 +3,11 @@ import asyncio
 import time
 from chatbot import ChatBot
 
+
+## Esta primera parte la maenejaria en una api usando fastapi
+## Pero creo que es suficiente por ahora dejarlo acá para la demo. 
+
+
 INDEX_LOCAL_PATH = 'index_juego_de_tronos_chunk_512.ann'
 MAPPING_PATH = '../data/jdt_chunks_sentences_512.json'
 INDEX_OPENAI_PATH = 'index_juego_de_tronos_chunks_512_openai.ann'
@@ -19,6 +24,8 @@ def init_chatbot(llm_engine: str):
         st.error(f"Error al inicializar el ChatBot: {e}")
         return None
 
+
+####
 
 def display_messages():
     """Muestra el historial de mensajes almacenados en la sesión."""

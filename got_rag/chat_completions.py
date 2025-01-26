@@ -61,7 +61,8 @@ class OpenAiCompletionWrapper:
         llm_answer = response.choices[0].message.content
         
         messages.append(llm_answer)
-        self.history.append(messages)
+        #self.history.append(messages)
+        logging.info({'openai_rag_answer': response})
         return llm_answer
         
 

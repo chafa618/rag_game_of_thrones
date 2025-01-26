@@ -187,11 +187,16 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 import joblib
 import nltk
-#nltk.download()
-# Descargar los recursos necesarios de NLTK
-nltk.download("punkt")
-nltk.download("punkt_tab")
-nltk.download("stopwords")
+
+
+def dowload_nltk_resources():
+    try:
+        nltk.data.find('tokenizers/punkt')
+
+    except LookupError:
+        nltk.download("punkt")
+        nltk.download("punkt_tab")
+        nltk.download("stopwords")
 
 def preprocess_text(text):
     """
@@ -247,16 +252,15 @@ def get_dc_cls():
 
 
 def predict(text, model, vectorizer):
-    print(type(text))
     norm_text = preprocess_text(text)
     X_new_tfidf = vectorizer.transform([norm_text])
     predictions = model.predict(X_new_tfidf)
     label = 'got' if predictions == 1 else 'commons'
-    
     logging.info(f"model: DC, label: {label}")
     return label
 
 
 if __name__ == '__main__':
+    
     data = build_data()
     train(data)
