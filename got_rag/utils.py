@@ -7,11 +7,11 @@ from llama_index.core.node_parser import SentenceSplitter
 
 
 
-def parse_pdf_to_md(path=None):
+def parse_pdf_to_md(path="data/Juego de tronos - Canción de hielo y fuego 1 (1) copy.pdf"):
+    #path = path if path else "data/Juego de tronos - Canción de hielo y fuego 1 (1) copy.pdf"
     logging.info(f'Parseando {path}...')
     md_read = pdf4llm.LlamaMarkdownReader()
-    path = path if path else "data/Juego de tronos - Canción de hielo y fuego 1 (1) copy.pdf"
-    data = md_read.load_data()
+    data = md_read.load_data(path)
     return data
 
 

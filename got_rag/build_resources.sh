@@ -65,5 +65,5 @@ fi
 echo "Creando el índice de embeddings usando OpenAI..."
 check_and_run "$INDEX_NAME_OPENAI" "python embeddings_es.py --model openai --chunks_file $CHUNKS_FILE --index_name $INDEX_NAME_OPENAI"
 echo "Índice de embeddings creado usando OpenAI."
-
+ 
 echo "Entrenamiento y creación de índices completados."
