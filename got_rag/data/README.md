@@ -1,0 +1,6 @@
+### Disclaimer:
+
+- Despues de probar algunas iteraciones con diferentes tamaños de chunks, el que creo que funcionó mejor fue el de 512. Esta version es la utilizada en la entrega. Chequear notebook con el proceso de splitting. Salvo en un archivo json los chunks para no tener que estar cosntantemente levantando el pdf al ejecutar el chatbot. 
+- Me quede sin tiempo de implementar un metodo de evaluación y asi tomar una decisión más acertada en terminos de accuracy, no obstante creo que en función de los objetivos de la POC, podría ser suficiente.  
+- La unica limpieza sobre los datos fue la eliminación de espacios multiples y guiones. Me percaté un poco in media res de las tildes y las particularidades del español, pero incluiria una serie de funciones de normalización del texto en todos los stages del proceso. Que a fin de cuentas solo es más exhaustiva en el módulo del clasificador de dominio. 
+- Además, hay un tema con el parseo de los pdfs y la division natural del libro en paginas. Creo que el parser se apega a esta división y corta de algun modo con el desarrollo 'humano' del proceso de lectura, quien al llegar al final de una pagina, es capaz de ligar la informacion con la pagina siguiente. Una punta para la que tirar.
