@@ -2,6 +2,12 @@
 
 Este proyecto implementa un chatbot que responde preguntas sobre el libro "Juego de Tronos" de George R. R. Martin, utilizando un enfoque de Recuperación de Información Asistida por Generación (RAG) con un modelo de lenguaje.
 
+El Bot implementa dos opciones de LLM para la parte de RAG
+- OpenAi
+- Ollama local
+
+Se han hecho pruebas con qwen2 y mistral sin presentar resultados superiores a los ofrecidos por la opcion privada. Probablemente sea necesario continuar con un trabajo más exhaustivo sobre la generacion de emebddings y/o la mejora de los propmt para cada opción. Ambos caminos quedan abiertos por ahora. 
+
 ## Propuesta de Solución
 
 El proyecto consiste en tres partes principales:

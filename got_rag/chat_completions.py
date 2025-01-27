@@ -114,8 +114,8 @@ class OllamaRAGCompletionWrapper:
     """
 
     def __init__(self,
-                 model_name="qwen2:1.5b-instruct",
-                 temperature=0.1,
+                 model_name="mistral:7b",
+                 temperature=0.0,
                  num_ctx=512):
         """
         Inicializa la clase con un modelo y parámetros de generación.
