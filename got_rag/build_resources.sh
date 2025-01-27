@@ -51,7 +51,7 @@ echo "Modelo de clasificación de dominio entrenado y guardado."
 
 # Crear el índice de embeddings usando SentenceTransformer
 echo "Creando el índice de embeddings usando SentenceTransformer..."
-check_and_run "$INDEX_NAME_LOCAL" "python embeddings_es.py --model sentence-transformer --chunks_file $CHUNKS_FILE --index_name $INDEX_NAME_LOCAL"
+check_and_run "$INDEX_NAME_LOCAL" "python rag.py --model sentence-transformer --chunks_file $CHUNKS_FILE --index_name $INDEX_NAME_LOCAL"
 echo "Índice de embeddings creado usando SentenceTransformer."
 
 
@@ -63,7 +63,7 @@ fi
 
 # Crear el índice de embeddings usando OpenAI
 echo "Creando el índice de embeddings usando OpenAI..."
-check_and_run "$INDEX_NAME_OPENAI" "python embeddings_es.py --model openai --chunks_file $CHUNKS_FILE --index_name $INDEX_NAME_OPENAI"
+check_and_run "$INDEX_NAME_OPENAI" "python rag.py --model openai --chunks_file $CHUNKS_FILE --index_name $INDEX_NAME_OPENAI"
 echo "Índice de embeddings creado usando OpenAI."
  
 echo "Entrenamiento y creación de índices completados."

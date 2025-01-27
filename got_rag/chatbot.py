@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 from pydantic import BaseModel
 from chat_completions import OllamaRAGCompletionWrapper, CommonsOllamaCompletionWrapper, OpenAiCompletionWrapper
-from embeddings_es import OpenaiEmbeddings, LocalEmbeddings
+from got_rag.rag import OpenaiEmbeddings, LocalEmbeddings
 from dc_training import get_dc_cls, predict
 from dotenv import load_dotenv
 import asyncio
