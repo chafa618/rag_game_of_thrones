@@ -104,7 +104,7 @@ python got_rag/embeddings_es.py --model openai --chunks_file data/jdt_chunks_sen
 Para ejecutar el chatbot, utiliza Streamlit:
 
 ```
-streamlit run got_rag/st_experiment.py
+streamlit run got_rag/st_app.py
 ```
 
 
